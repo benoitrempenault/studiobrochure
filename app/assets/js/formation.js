@@ -911,6 +911,8 @@ function showFD(id, btn){
   document.getElementById('section-formation').classList.toggle('active', id === 'formation');
 }
 document.addEventListener('DOMContentLoaded', function(){
+  /* Version Century 21 uniquement : les agences marque blanche sont renvoyees a l'accueil. */
+  if (!(window.SBIsC21 && window.SBIsC21())) { window.location.replace('index.html'); return; }
   try {
     var agency = JSON.parse(localStorage.getItem('studio-mandatpro-agency') || '{}') || {};
     var tl = document.getElementById('topbarLogo');
