@@ -186,6 +186,31 @@ h1, .fh .ft, .dh1 { font-family: "Fraunces", Georgia, serif; font-weight: 550; }
   .gauge text { fill: #111; }
 }
 @media (max-width: 700px) { .mg { grid-template-columns: 1fr; } }
+
+/* ---------- Outils de calcul ---------- */
+[hidden] { display: none !important; }
+.ctab { padding: 8px 20px; border: none; background: transparent; cursor: pointer; font: inherit; font-size: 14px; color: var(--ui-muted); font-weight: 500; }
+.ctab.active { background: var(--ui-accent); color: var(--ui-accent-ink); font-weight: 600; }
+.ctool { display: none; } .ctool.active { display: block; }
+.cgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+@media (max-width: 820px) { .cgrid { grid-template-columns: 1fr; } }
+.clab { display: block; font-size: 13px; font-weight: 500; color: var(--ui-text); margin-bottom: 12px; }
+.cin { width: 100%; margin-top: 5px; padding: 9px 11px; border: 1px solid var(--ui-line); border-radius: 8px; background: var(--ui-field, var(--ui-panel-2)); color: var(--ui-text); font: inherit; font-size: 14px; }
+.cin:focus { outline: none; border-color: var(--ui-accent); }
+.ccheck { display: flex; gap: 9px; align-items: flex-start; font-weight: 400; line-height: 1.5; margin-top: 12px; }
+.ccheck input { width: 16px; height: 16px; margin-top: 2px; accent-color: var(--ui-accent); flex-shrink: 0; }
+.cres { display: flex; flex-direction: column; }
+.crow { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--ui-line); font-size: 13.5px; }
+.crow:last-of-type { border-bottom: none; }
+.crow span { color: var(--ui-muted); }
+.crow b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.crow.ctotal { border-top: 2px solid var(--ui-accent); border-bottom: none; margin-top: 4px; padding-top: 12px; font-size: 15px; }
+.crow.ctotal span { color: var(--ui-text); font-weight: 600; }
+.crow.ctotal b { color: var(--ui-accent); font-size: 19px; font-family: "Fraunces", Georgia, serif; }
+.crow.csub b { color: var(--ui-text); }
+.cok { color: #9ecf84; } .cko { color: #ff9c9c; }
+.cnote { font-size: 12px; color: var(--ui-muted); line-height: 1.55; margin: 10px 0 0; }
+.cnote-inline { font-weight: 400; color: var(--ui-muted); font-size: 11.5px; }
   </style>
 </head>
 <body>
@@ -206,6 +231,7 @@ h1, .fh .ft, .dh1 { font-family: "Fraunces", Georgia, serif; font-weight: 550; }
     <div class="fd-nav">
       <button class="active" data-sec="docs" type="button">Documents vendeur</button>
       <button data-sec="formation" type="button">Formation</button>
+      <button data-sec="tools" type="button">Outils de calcul</button>
     </div>
 
     <div id="section-fd-docs" class="section active"><div id="docsApp"></div></div>
@@ -527,6 +553,112 @@ h1, .fh .ft, .dh1 { font-family: "Fraunces", Georgia, serif; font-weight: 550; }
 </div>
 </div>
 
+
+<div id="section-fd-tools" class="section">
+<div class="ftabs">
+  <button class="ctab active" data-tool="notaire" type="button">Frais de notaire</button>
+  <button class="ctab" data-tool="pv" type="button">Plus-value</button>
+  <button class="ctab" data-tool="fin" type="button">Financement</button>
+</div>
+
+<!-- ============ Frais de notaire ============ -->
+<div class="ctool active" id="tool-notaire">
+  <div class="fh"><div class="ft">Frais de notaire (frais d'acquisition)</div><div class="fs">Estimation des frais à prévoir par l'acquéreur — détail droit par droit</div></div>
+  <div class="cgrid">
+    <div class="cc">
+      <h3>Le projet</h3>
+      <label class="clab">Prix de vente (FAI ou net vendeur + honoraires charge acquéreur)
+        <input class="cin" type="number" id="fnPrix" value="250000" min="0" step="1000"></label>
+      <label class="clab">Mobilier déduit (cuisine équipée, électroménager…)
+        <input class="cin" type="number" id="fnMobilier" value="0" min="0" step="500"></label>
+      <div class="tgt" style="margin-top:14px">Type de bien</div>
+      <div class="qthm">
+        <button class="thbtn active" data-fn-type="ancien" type="button">Ancien</button>
+        <button class="thbtn" data-fn-type="neuf" type="button">Neuf (VEFA)</button>
+      </div>
+      <label class="clab ccheck"><input type="checkbox" id="fnHausse" checked>
+        Département ayant voté la hausse des droits à 5 % (majorité des départements depuis 2025 — c'est le cas de la Gironde)</label>
+    </div>
+    <div class="cc">
+      <h3>Estimation</h3>
+      <div class="cres" id="fnRes"></div>
+      <p class="cnote">Estimation indicative (barème des émoluments 2021 en vigueur, débours forfaitisés). Le décompte exact est établi par le notaire ; le trop-perçu éventuel est remboursé après l'acte.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Plus-value ============ -->
+<div class="ctool" id="tool-pv">
+  <div class="fh"><div class="ft">Plus-value immobilière</div><div class="fs">Résidence secondaire, investissement locatif, terrain — impôt et net vendeur</div></div>
+  <div class="cgrid">
+    <div class="cc">
+      <h3>Le bien vendu</h3>
+      <label class="clab ccheck"><input type="checkbox" id="pvRP"> Résidence principale du vendeur (exonération totale)</label>
+      <label class="clab">Prix de vente
+        <input class="cin" type="number" id="pvVente" value="320000" min="0" step="1000"></label>
+      <label class="clab">Frais de cession (diagnostics, mainlevée…)
+        <input class="cin" type="number" id="pvFraisCession" value="1000" min="0" step="100"></label>
+      <label class="clab">Prix d'achat
+        <input class="cin" type="number" id="pvAchat" value="200000" min="0" step="1000"></label>
+      <label class="clab">Années de détention
+        <input class="cin" type="number" id="pvAnnees" value="12" min="0" max="60" step="1"></label>
+      <div class="tgt" style="margin-top:14px">Frais d'acquisition d'origine</div>
+      <div class="qthm">
+        <button class="thbtn active" data-pv-fa="forfait" type="button">Forfait 7,5 %</button>
+        <button class="thbtn" data-pv-fa="reel" type="button">Montant réel</button>
+      </div>
+      <label class="clab" id="pvFaReelWrap" hidden>Frais d'acquisition réels
+        <input class="cin" type="number" id="pvFaReel" value="15000" min="0" step="500"></label>
+      <div class="tgt" style="margin-top:14px">Travaux</div>
+      <div class="qthm">
+        <button class="thbtn active" data-pv-tx="aucun" type="button">Aucun</button>
+        <button class="thbtn" data-pv-tx="forfait" type="button">Forfait 15 % (détention ≥ 5 ans)</button>
+        <button class="thbtn" data-pv-tx="reel" type="button">Factures réelles</button>
+      </div>
+      <label class="clab" id="pvTxReelWrap" hidden>Montant des travaux (factures d'entreprises, non déjà déduits des revenus)
+        <input class="cin" type="number" id="pvTxReel" value="0" min="0" step="500"></label>
+    </div>
+    <div class="cc">
+      <h3>Estimation</h3>
+      <div class="cres" id="pvRes"></div>
+      <p class="cnote">Exonérations principales : résidence principale ; détention ≥ 22 ans (impôt) et ≥ 30 ans (prélèvements sociaux) ; prix ≤ 15 000 € ; première cession sous conditions de remploi. Calcul indicatif — le notaire établit la déclaration exacte.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Financement ============ -->
+<div class="ctool" id="tool-fin">
+  <div class="fh"><div class="ft">Simulation de financement</div><div class="fs">Mensualité, taux d'endettement et capacité d'emprunt de l'acquéreur</div></div>
+  <div class="cgrid">
+    <div class="cc">
+      <h3>Le projet</h3>
+      <label class="clab">Prix du bien
+        <input class="cin" type="number" id="fiPrix" value="250000" min="0" step="1000"></label>
+      <label class="clab">Frais de notaire <span class="cnote-inline">(pré-rempli ≈ 8 % dans l'ancien — modifiable, ou utilisez la calculette dédiée)</span>
+        <input class="cin" type="number" id="fiFrais" value="20000" min="0" step="500"></label>
+      <label class="clab">Apport personnel
+        <input class="cin" type="number" id="fiApport" value="30000" min="0" step="1000"></label>
+      <h3 style="margin-top:16px">Le prêt</h3>
+      <label class="clab">Taux nominal annuel (%)
+        <input class="cin" type="number" id="fiTaux" value="3.4" min="0" max="15" step="0.05"></label>
+      <label class="clab">Durée (années)
+        <input class="cin" type="number" id="fiDuree" value="25" min="1" max="35" step="1"></label>
+      <label class="clab">Taux d'assurance annuel (% du capital emprunté)
+        <input class="cin" type="number" id="fiAssu" value="0.34" min="0" max="2" step="0.01"></label>
+      <h3 style="margin-top:16px">Le foyer</h3>
+      <label class="clab">Revenus nets mensuels du foyer (avant impôt)
+        <input class="cin" type="number" id="fiRevenus" value="4200" min="0" step="100"></label>
+      <label class="clab">Charges de crédits en cours (mensualités conservées après l'achat)
+        <input class="cin" type="number" id="fiCharges" value="0" min="0" step="50"></label>
+    </div>
+    <div class="cc">
+      <h3>Résultat</h3>
+      <div class="cres" id="fiRes"></div>
+      <p class="cnote">Repère HCSF : taux d'effort maximal de 35 % assurance comprise (les banques disposent d'une marge de flexibilité sur ~20 % des dossiers). Simulation indicative, hors frais de garantie et de dossier.</p>
+    </div>
+  </div>
+</div>
+</div>
 
   </main>
 

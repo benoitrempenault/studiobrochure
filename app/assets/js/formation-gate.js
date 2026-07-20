@@ -1,14 +1,15 @@
 /* =========================================================================
-   formation-gate.js — l'onglet « Formation & Documents » est réservé à la
-   version Century 21 de Studio Brochure. Il reste invisible (et sa page
-   inaccessible) pour les agences marque blanche.
+   formation-gate.js — l'onglet « Formation & Documents » est réservé à
+   l'agence Century 21 Kadima. Il reste invisible (et sa page
+   inaccessible) pour toutes les autres agences, marque blanche comprise.
    La détection se fait sur le nom d'agence paramétré à l'accueil.
    ========================================================================= */
 (function () {
   function isC21() {
     try {
       var a = JSON.parse(localStorage.getItem("studio-mandatpro-agency") || "{}") || {};
-      return /century\s*-?\s*21/i.test(String(a.name || ""));
+      var n = String(a.name || "").toLowerCase().replace(/[-_]/g, " ").replace(/\s+/g, " ");
+      return /century\s?21\s?kadima/.test(n);
     } catch (e) { return false; }
   }
   window.SBIsC21 = isC21;

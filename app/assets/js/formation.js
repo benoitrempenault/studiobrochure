@@ -909,6 +909,8 @@ function showFD(id, btn){
   btn.classList.add('active');
   document.getElementById('section-fd-docs').classList.toggle('active', id === 'docs');
   document.getElementById('section-formation').classList.toggle('active', id === 'formation');
+  var tools = document.getElementById('section-fd-tools');
+  if (tools) tools.classList.toggle('active', id === 'tools');
 }
 document.addEventListener('DOMContentLoaded', function(){
   /* Version Century 21 uniquement : les agences marque blanche sont renvoyees a l'accueil. */
@@ -924,4 +926,187 @@ document.addEventListener('DOMContentLoaded', function(){
     b.addEventListener('click', function(){ showFD(b.dataset.sec, b); });
   });
   renderDocsModule();
+});
+
+/* ================= OUTILS DE CALCUL ================= */
+function eur(n){ return new Intl.NumberFormat('fr-FR', {style:'currency', currency:'EUR', maximumFractionDigits:0}).format(Math.round(n)); }
+function pct1(n){ return (Math.round(n*10)/10).toLocaleString('fr-FR') + ' %'; }
+function num(id){ var v = parseFloat(document.getElementById(id).value); return isFinite(v) && v >= 0 ? v : 0; }
+function resRow(label, val, cls){ return '<div class="crow '+(cls||'')+'"><span>'+label+'</span><b>'+val+'</b></div>'; }
+
+/* ----- Frais de notaire ----- */
+var fnType = 'ancien';
+
+/* Émoluments proportionnels du notaire (barème en vigueur depuis 2021), hors TVA */
+function emoluments(base){
+  var t = 0;
+  t += Math.min(base, 6500) * 0.03870;
+  if (base > 6500)  t += (Math.min(base, 17000) - 6500)  * 0.01596;
+  if (base > 17000) t += (Math.min(base, 60000) - 17000) * 0.01064;
+  if (base > 60000) t += (base - 60000) * 0.00799;
+  return t;
+}
+
+function calcNotaire(){
+  var prix = num('fnPrix'), mobilier = Math.min(num('fnMobilier'), prix);
+  var base = prix - mobilier;
+  var hausse = document.getElementById('fnHausse').checked;
+  var emol = emoluments(base);
+  var emolTTC = emol * 1.20;
+  var dmtoTaux = fnType === 'neuf' ? 0.00715 : (hausse ? 0.063185 : 0.0580665);
+  var dmto = base * dmtoTaux;
+  var csi = Math.max(base * 0.001, 15);
+  var debours = fnType === 'neuf' ? 1000 : 1200;
+  var total = emolTTC + dmto + csi + debours;
+  var el = document.getElementById('fnRes');
+  el.innerHTML =
+    (mobilier > 0 ? resRow('Base taxable (mobilier déduit)', eur(base)) : '') +
+    resRow(fnType === 'neuf' ? 'Taxe de publicité foncière (0,715 %)' : 'Droits de mutation (' + pct1(dmtoTaux * 100) + ')', eur(dmto)) +
+    resRow('Émoluments du notaire (TTC)', eur(emolTTC)) +
+    resRow('Contribution de sécurité immobilière (0,10 %)', eur(csi)) +
+    resRow('Formalités et débours (forfait)', eur(debours)) +
+    resRow('Total estimé', eur(total), 'ctotal') +
+    resRow('Soit ' + pct1(base > 0 ? total / base * 100 : 0) + ' du prix — provision conseillée', eur(Math.ceil(total / 500) * 500), 'csub') +
+    (fnType === 'neuf' ? '<p class="cnote">Dans le neuf, la TVA (20 %) est déjà comprise dans le prix de vente affiché par le promoteur.</p>' : '') +
+    (mobilier > 0 ? '<p class="cnote">Le mobilier déduit doit être listé et valorisé de façon réaliste dans le compromis (factures à l\'appui).</p>' : '');
+}
+
+/* ----- Plus-value ----- */
+var pvFaMode = 'forfait', pvTxMode = 'aucun';
+
+function surtaxePV(pv){
+  if (pv <= 50000) return 0;
+  if (pv <= 60000)  return 0.02 * pv - (60000 - pv) * 1 / 20;
+  if (pv <= 100000) return 0.02 * pv;
+  if (pv <= 110000) return 0.03 * pv - (110000 - pv) * 1 / 10;
+  if (pv <= 150000) return 0.03 * pv;
+  if (pv <= 160000) return 0.04 * pv - (160000 - pv) * 15 / 100;
+  if (pv <= 200000) return 0.04 * pv;
+  if (pv <= 210000) return 0.05 * pv - (210000 - pv) * 20 / 100;
+  if (pv <= 250000) return 0.05 * pv;
+  if (pv <= 260000) return 0.06 * pv - (260000 - pv) * 25 / 100;
+  return 0.06 * pv;
+}
+
+function calcPV(){
+  var el = document.getElementById('pvRes');
+  if (document.getElementById('pvRP').checked){
+    el.innerHTML = resRow('Résidence principale', 'Exonération totale', 'ctotal') +
+      '<p class="cnote">La cession de la résidence principale (et de ses dépendances vendues simultanément) est exonérée d\'impôt sur la plus-value, sans condition de durée.</p>';
+    return;
+  }
+  var vente = num('pvVente'), fCession = num('pvFraisCession');
+  var achat = num('pvAchat'), annees = Math.floor(num('pvAnnees'));
+  var fa = pvFaMode === 'reel' ? num('pvFaReel') : achat * 0.075;
+  var tx = 0;
+  if (pvTxMode === 'forfait' && annees >= 5) tx = achat * 0.15;
+  if (pvTxMode === 'reel') tx = num('pvTxReel');
+  var prixCorrige = achat + fa + tx;
+  var pvBrute = (vente - fCession) - prixCorrige;
+  if (pvBrute <= 0){
+    el.innerHTML = resRow('Plus-value brute', eur(Math.max(pvBrute, -pvBrute) * (pvBrute < 0 ? -1 : 1))) +
+      resRow('Aucune imposition', 'Moins-value ou plus-value nulle', 'ctotal') +
+      '<p class="cnote">Prix d\'acquisition corrigé retenu : ' + eur(prixCorrige) + ' (achat + frais + travaux). Une moins-value n\'est ni imposée, ni imputable sur une autre vente (sauf cas particuliers).</p>';
+    return;
+  }
+  /* abattements pour durée de détention */
+  var abIR = 0, abPS = 0;
+  if (annees >= 6){
+    abIR = 6 * (Math.min(annees, 21) - 5) + (annees >= 22 ? 4 : 0);
+    abPS = 1.65 * (Math.min(annees, 21) - 5) + (annees >= 22 ? 1.6 : 0) + (annees > 22 ? 9 * (Math.min(annees, 30) - 22) : 0);
+  }
+  abIR = Math.min(abIR, 100); abPS = Math.min(abPS, 100);
+  var baseIR = pvBrute * (1 - abIR / 100);
+  var basePS = pvBrute * (1 - abPS / 100);
+  var ir = baseIR * 0.19;
+  var ps = basePS * 0.172;
+  var surtaxe = surtaxePV(baseIR);
+  var total = ir + ps + surtaxe;
+  var net = vente - fCession - total;
+  el.innerHTML =
+    resRow('Plus-value brute', eur(pvBrute)) +
+    resRow('Abattement durée — impôt (' + annees + ' an' + (annees > 1 ? 's' : '') + ')', pct1(abIR)) +
+    resRow('Abattement durée — prélèv. sociaux', pct1(abPS)) +
+    resRow('Impôt sur la plus-value (19 %)', eur(ir)) +
+    resRow('Prélèvements sociaux (17,2 %)', eur(ps)) +
+    (surtaxe > 0 ? resRow('Surtaxe (plus-value > 50 000 €)', eur(surtaxe)) : '') +
+    resRow('Imposition totale estimée', eur(total), 'ctotal') +
+    resRow('Net vendeur après impôt', eur(net), 'csub') +
+    (annees >= 22 && annees < 30 ? '<p class="cnote">Détention ≥ 22 ans : plus d\'impôt sur le revenu — il ne reste que les prélèvements sociaux (exonérés à 30 ans).</p>' : '');
+}
+
+/* ----- Financement ----- */
+function calcFin(){
+  var prix = num('fiPrix'), frais = num('fiFrais'), apport = num('fiApport');
+  var taux = num('fiTaux') / 100, annees = Math.max(1, Math.floor(num('fiDuree')));
+  var tassu = num('fiAssu') / 100;
+  var revenus = num('fiRevenus'), charges = num('fiCharges');
+  var capital = Math.max(0, prix + frais - apport);
+  var n = annees * 12, tm = taux / 12;
+  var mens = tm > 0 ? capital * tm / (1 - Math.pow(1 + tm, -n)) : capital / n;
+  var assu = capital * tassu / 12;
+  var mensTot = mens + assu;
+  var coutInterets = mens * n - capital;
+  var coutAssu = assu * n;
+  var effort = revenus > 0 ? (mensTot + charges) / revenus * 100 : 0;
+  /* capacité maximale à 35 % d'effort, assurance comprise */
+  var mensMax = Math.max(0, revenus * 0.35 - charges);
+  var facteur = (tm > 0 ? tm / (1 - Math.pow(1 + tm, -n)) : 1 / n) + tassu / 12;
+  var capMax = facteur > 0 ? mensMax / facteur : 0;
+  var ok = effort <= 35;
+  var el = document.getElementById('fiRes');
+  el.innerHTML =
+    resRow('Capital à emprunter', eur(capital), 'ctotal') +
+    resRow('Mensualité hors assurance', eur(mens)) +
+    resRow('Assurance emprunteur / mois', eur(assu)) +
+    resRow('Mensualité totale', eur(mensTot), 'csub') +
+    resRow('Coût total des intérêts', eur(coutInterets)) +
+    resRow('Coût total de l\'assurance', eur(coutAssu)) +
+    resRow('Coût total du crédit', eur(coutInterets + coutAssu)) +
+    '<div class="crow"><span>Taux d\'effort (endettement)</span><b class="' + (ok ? 'cok' : 'cko') + '">' + pct1(effort) + (ok ? ' ✓' : ' ✗ > 35 %') + '</b></div>' +
+    resRow('Capacité d\'emprunt max. du foyer (35 %, ' + annees + ' ans)', eur(capMax)) +
+    (!ok ? '<p class="cnote">Au-dessus de 35 % : allongez la durée, augmentez l\'apport ou visez un prix inférieur — capacité d\'emprunt indicative ci-dessus, à laquelle s\'ajoute l\'apport.</p>'
+         : '<p class="cnote">Dossier dans les clous du HCSF. Pensez à faire valider une attestation de faisabilité par la banque ou un courtier avant les visites : c\'est un argument fort au passage d\'offre.</p>');
+}
+
+/* ----- Navigation et écouteurs des outils ----- */
+document.addEventListener('DOMContentLoaded', function(){
+  if (!document.getElementById('section-fd-tools')) return;
+  document.querySelectorAll('.ctab').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('.ctab').forEach(function(x){ x.classList.remove('active'); });
+      document.querySelectorAll('.ctool').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active');
+      document.getElementById('tool-' + (b.dataset.tool === 'fin' ? 'fin' : b.dataset.tool)).classList.add('active');
+    });
+  });
+  document.querySelectorAll('[data-fn-type]').forEach(function(b){
+    b.addEventListener('click', function(){
+      fnType = b.dataset.fnType;
+      document.querySelectorAll('[data-fn-type]').forEach(function(x){ x.classList.toggle('active', x === b); });
+      calcNotaire();
+    });
+  });
+  document.querySelectorAll('[data-pv-fa]').forEach(function(b){
+    b.addEventListener('click', function(){
+      pvFaMode = b.dataset.pvFa;
+      document.querySelectorAll('[data-pv-fa]').forEach(function(x){ x.classList.toggle('active', x === b); });
+      document.getElementById('pvFaReelWrap').hidden = pvFaMode !== 'reel';
+      calcPV();
+    });
+  });
+  document.querySelectorAll('[data-pv-tx]').forEach(function(b){
+    b.addEventListener('click', function(){
+      pvTxMode = b.dataset.pvTx;
+      document.querySelectorAll('[data-pv-tx]').forEach(function(x){ x.classList.toggle('active', x === b); });
+      document.getElementById('pvTxReelWrap').hidden = pvTxMode !== 'reel';
+      calcPV();
+    });
+  });
+  ['fnPrix','fnMobilier'].forEach(function(id){ document.getElementById(id).addEventListener('input', calcNotaire); });
+  document.getElementById('fnHausse').addEventListener('change', calcNotaire);
+  ['pvVente','pvFraisCession','pvAchat','pvAnnees','pvFaReel','pvTxReel'].forEach(function(id){ document.getElementById(id).addEventListener('input', calcPV); });
+  document.getElementById('pvRP').addEventListener('change', calcPV);
+  ['fiPrix','fiFrais','fiApport','fiTaux','fiDuree','fiAssu','fiRevenus','fiCharges'].forEach(function(id){ document.getElementById(id).addEventListener('input', calcFin); });
+  calcNotaire(); calcPV(); calcFin();
 });
