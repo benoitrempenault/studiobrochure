@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self' https://api.studiobrochure.fr https://studio-brochure-api.studiobrochure.workers.dev https://kadima-admin.onrender.com" />
+  <title>Studio Brochure — Mon compte</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <meta name="description" content="Compte Studio Brochure « Tout compris » : connexion, abonnement et usage de la rédaction IA." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f0f10; --panel: #17171a; --panel-2: #1e1e22; --line: #2a2a30;
+      --text: #ece9e2; --muted: #9a968c; --accent: #c2a36b; --accent-ink: #1a1714;
+    }
+    * { box-sizing: border-box; margin: 0; }
+    html { height: 100%; }
+    body {
+      background: var(--bg); color: var(--text); min-height: 100%;
+      font-family: "Inter", system-ui, sans-serif;
+      /* safe center : centré quand le contenu tient, aligné en haut (défilable)
+         quand il dépasse — évite que le haut soit coupé avec beaucoup de conseillers. */
+      display: flex; flex-direction: column; align-items: center; justify-content: safe center;
+      padding: 30px 20px; gap: 26px;
+    }
+    h1 { font-family: "Fraunces", Georgia, serif; font-weight: 500; font-size: clamp(24px, 4vw, 34px); text-align: center; }
+    h1 em { font-style: normal; color: var(--accent); }
+    .card {
+      width: min(480px, 100%); background: var(--panel); border: 1px solid var(--line);
+      border-radius: 18px; padding: 26px; box-shadow: 0 24px 70px rgba(0,0,0,.5);
+    }
+    .card h2 { font-family: "Fraunces", Georgia, serif; font-weight: 550; font-size: 20px; margin-bottom: 6px; }
+    .hint { color: var(--muted); font-size: 13px; line-height: 1.55; }
+    label { display: block; font-size: 13px; font-weight: 500; margin: 14px 0 0; }
+    input[type="email"], input[type="text"], input[type="password"] {
+      width: 100%; margin-top: 6px; padding: 11px 13px; border-radius: 10px;
+      border: 1px solid var(--line); background: var(--panel-2); color: var(--text); font: inherit;
+    }
+    input:focus { outline: none; border-color: var(--accent); }
+    .btn {
+      display: inline-block; border: 1px solid var(--line); background: var(--panel-2); color: var(--text);
+      border-radius: 10px; padding: 11px 18px; font: inherit; font-weight: 600; cursor: pointer; text-decoration: none;
+    }
+    .btn:hover { border-color: var(--accent); }
+    .btn--primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+    .btn--full { width: 100%; margin-top: 14px; }
+    .msg { min-height: 18px; font-size: 13px; margin-top: 10px; }
+    .msg.is-error { color: #ff9c9c; }
+    .msg.is-ok { color: #9fd8a4; }
+    .row { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+    .row:last-of-type { border-bottom: 0; }
+    .row b { font-weight: 600; }
+    .quota { height: 8px; background: var(--panel-2); border-radius: 99px; overflow: hidden; margin-top: 8px; }
+    .quota > div { height: 100%; background: var(--accent); border-radius: 99px; }
+    .badge { display: inline-block; border-radius: 99px; padding: 3px 12px; font-size: 11.5px; font-weight: 600; letter-spacing: .05em; }
+    .badge--on { background: rgba(120,200,130,.15); color: #9fd8a4; }
+    .badge--off { background: rgba(230,110,100,.15); color: #ff9c9c; }
+    .foot { display: flex; gap: 10px; justify-content: space-between; flex-wrap: wrap; margin-top: 18px; }
+    .back { color: var(--muted); font-size: 13px; text-decoration: none; }
+    .back:hover { color: var(--accent); }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <h1>Studio <em>Brochure</em> — Mon compte</h1>
+
+  <!-- Offre non activée (apiBase vide dans config.js) -->
+  <div class="card" id="cardOff" hidden>
+    <h2>Offre « Tout compris »</h2>
+    <p class="hint">Cette formule (rédaction IA incluse, sans clé à gérer) n'est pas encore ouverte.
+      En attendant, l'application fonctionne avec votre clé Anthropic — et votre clé d'activation
+      Studio Brochure. Intéressé par le « Tout compris » ? Écrivez-nous depuis la page de présentation.</p>
+    <div class="foot"><a class="back" href="index.html">⌂ Retour à l'accueil</a></div>
+  </div>
+
+  <!-- Connexion -->
+  <div class="card" id="cardLogin" hidden>
+    <h2>Connexion</h2>
+    <p class="hint">Avec votre mot de passe si vous en avez défini un — sinon, recevez un lien de
+      connexion par e-mail (valable 15 minutes).</p>
+    <button class="btn btn--primary btn--full" id="btnConfirm" type="button" hidden>Ouvrir ma session</button>
+    <label>Adresse e-mail
+      <input type="email" id="email" placeholder="vous@votre-agence.fr" autocomplete="email" />
+    </label>
+    <label>Mot de passe
+      <input type="password" id="pw" autocomplete="current-password" />
+    </label>
+    <button class="btn btn--primary btn--full" id="btnPwLogin" type="button">Se connecter</button>
+    <p class="hint" style="margin-top:12px">Pas (encore) de mot de passe ? Recevez un lien de connexion —
+      vous pourrez ensuite définir votre mot de passe ci-dessous, une fois connecté.</p>
+    <button class="btn btn--full" id="btnSend" type="button">Recevoir mon lien de connexion</button>
+    <p class="msg" id="loginMsg" role="status" aria-live="polite"></p>
+    <p class="hint" style="margin-top:8px">📱 Depuis l'app de l'écran d'accueil, le lien de l'e-mail s'ouvre
+      dans Safari au lieu d'ici. Dans ce cas : restez appuyé sur le lien dans l'e-mail → <b>Copier</b>,
+      puis collez-le ci-dessous.</p>
+    <input type="text" id="linkPaste" placeholder="Ou collez ici le lien de connexion reçu" autocomplete="off"
+      style="width:100%;margin-top:8px;padding:11px 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);font:inherit" />
+    <div class="foot"><a class="back" href="index.html">⌂ Retour à l'accueil</a></div>
+  </div>
+
+  <!-- Profil connecté -->
+  <div class="card" id="cardMe" hidden>
+    <h2 id="meAgency">…</h2>
+    <p class="hint" id="meUser"></p>
+    <div style="margin:14px 0 4px"><span class="badge" id="meBadge"></span></div>
+    <div class="row"><span>Formule</span><b id="mePlan"></b></div>
+    <div class="row"><span>Utilisations IA ce mois-ci</span><b id="meReq"></b></div>
+    <div class="row"><span>Usage raisonnable</span><b id="meQuota"></b></div>
+    <div class="quota"><div id="meBar" style="width:0%"></div></div>
+    <p class="hint" style="margin-top:12px">Sur cet appareil, la rédaction IA passe par votre
+      abonnement — aucune clé API à configurer. Valable sur 2 appareils par utilisateur.</p>
+    <a class="btn btn--primary btn--full" id="btnGoTools" href="index.html" style="margin-top:14px">Ouvrir mes outils →</a>
+    <!-- Poste ou tablette partagés : rendre la main au collaborateur suivant
+         doit se voir tout de suite, sans chercher en bas de page. -->
+    <button class="btn btn--full" id="btnSwitch" type="button" style="margin-top:8px">Changer de compte (se déconnecter)</button>
+    <div style="margin-top:18px;border-top:1px solid var(--line);padding-top:14px">
+      <h2 style="font-size:16.5px">Mon mot de passe</h2>
+      <p class="hint">Définissez (ou changez) votre mot de passe pour vous connecter directement,
+        sans attendre le lien e-mail — dans Studio Suivi comme ici.</p>
+      <label>Nouveau mot de passe (8 caractères minimum)
+        <input type="password" id="pwNew" autocomplete="new-password" />
+      </label>
+      <label>Confirmez-le
+        <input type="password" id="pwNew2" autocomplete="new-password" />
+      </label>
+      <button class="btn btn--full" id="btnSetPw" type="button">Enregistrer mon mot de passe</button>
+      <p class="msg" id="pwMsg" role="status" aria-live="polite"></p>
+    </div>
+    <div class="foot">
+      <a class="back" href="index.html">⌂ Retour à l'accueil</a>
+      <button class="btn" id="btnLogout" type="button">Se déconnecter</button>
+    </div>
+  </div>
+
+  <!-- Gestion des conseillers (admin de l'agence uniquement) -->
+  <div class="card" id="cardTeam" hidden>
+    <h2>Mes conseillers</h2>
+    <p class="hint" id="teamSeats"></p>
+    <div id="teamList" style="margin:6px 0 4px"></div>
+    <label>Ajouter un conseiller — e-mail
+      <input type="email" id="teamEmail" placeholder="prenom.nom@century21.fr" autocomplete="off" />
+    </label>
+    <label>Nom (facultatif)
+      <input type="text" id="teamName" placeholder="Prénom Nom" autocomplete="off" />
+    </label>
+    <button class="btn btn--primary btn--full" id="btnAddConseiller" type="button">Ajouter et envoyer l'accès</button>
+    <p class="msg" id="teamMsg" role="status" aria-live="polite"></p>
+    <p class="hint" style="margin-top:8px">Le conseiller reçoit aussitôt un e-mail avec son lien de connexion.
+      Le nombre de conseillers est limité au nombre de sièges de votre abonnement.</p>
+  </div>
+
+  <!-- Codes d'accès collaborateurs du site century21-kadima.fr -->
+  <div class="card" id="cardKadimaCode">
+    <h2>Accès collaborateurs — site Kadima</h2>
+    <p class="hint">Les codes demandés par le bouton « Accès collaborateurs » du site century21-kadima.fr pour entrer au Studio. Un code par personne : révocable individuellement, avec date d'expiration automatique, et envoyable par e-mail.</p>
+
+    <div id="kadimaVerrou">
+      <label>Mot de passe agence
+        <input type="password" id="kadimaMdp" autocomplete="off" />
+      </label>
+      <button class="btn btn--primary btn--full" id="btnKadimaDeverrouiller" type="button">Gérer les codes</button>
+    </div>
+
+    <div id="kadimaDeverrouille" hidden>
+      <div id="kadimaListe" style="margin:10px 0 4px"></div>
+      <label>Nom du collaborateur
+        <input type="text" id="kadimaLibelle" placeholder="ex. Adeline Lebon" autocomplete="off" />
+      </label>
+      <label>Son e-mail (pour lui envoyer le code)
+        <input type="email" id="kadimaEmail" placeholder="prenom.nom@century21.fr" autocomplete="off" />
+      </label>
+      <label>Code personnalisé (laisser vide pour un code généré)
+        <input type="text" id="kadimaNouveauCode" placeholder="généré automatiquement" autocomplete="off" />
+      </label>
+      <label>Validité (jours)
+        <input type="text" id="kadimaJours" value="90" inputmode="numeric" autocomplete="off" />
+      </label>
+      <button class="btn btn--primary btn--full" id="btnKadimaCreer" type="button">Créer le code</button>
+    </div>
+    <p class="msg" id="kadimaCodeMsg" role="status" aria-live="polite"></p>
+  </div>
+
+  <script src="assets/js/config.js?v=3"></script>
+  <script src="assets/js/compte.js?v=6"></script>
+  <script src="assets/js/kadima-code.js?v=2"></script>
+</body>
+</html>
